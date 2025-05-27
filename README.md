@@ -261,4 +261,3 @@ example request url: /v2/increment/example_db/nums_list/num1
 # Projects using nahcrofDB
 - [CrofAI](https://ai.nahcrof.com/) - Cheap, scalable AI inference provider
 - [Rise-game](https://rise-game.com/) - text-based, online, browser RPG game
-- [Strife](https://strife.nahcrof.com/) - basic chat app
