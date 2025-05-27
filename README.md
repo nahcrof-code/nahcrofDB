@@ -4,7 +4,7 @@ nahcrofDB is an open source, key-value database, designed to be simple, fast, an
 # Installation
 In order to install nahcrofDB, just run 
 ```
-git clone https://github.com/scuzzles/nahcrofDB.git
+git clone https://github.com/nahcrof-code/nahcrofDB.git
 ```
 After installing, make sure that you have the required packages installed, the command for this is as follows.
 ```
