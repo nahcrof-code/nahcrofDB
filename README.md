@@ -109,6 +109,7 @@ OUTPUT:
 ```
 ## Searching the database
 To find keys containing specific data, you can use the .search function
+(NOTE: search function does not scale, please use searchNames instead where it is possible)
 ```python
 client.search("test")
 ```
