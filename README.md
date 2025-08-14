@@ -62,7 +62,7 @@ client.py is the python api wrapper for nahcrofDB.
 To start, you will use the client.init function.
 ```python
 import client
-client.init("my_db_name", "https://url.com/", "api_password_here")
+client.init(folder="my_db_name", url="https://url.com/", password="api_password_here")
 ```
 ## Making Keys
 To make one key, you can do this.
@@ -108,15 +108,6 @@ OUTPUT:
 {'key': 'value', 'key2': 'value'}
 ```
 ## Searching the database
-To find keys containing specific data, you can use the .search function
-(NOTE: search function does not scale, please use searchNames instead where it is possible)
-```python
-client.search("test")
-```
-OUTPUT:
-```
-['testkey']
-```
 To find keys containing data within keynames, you will use the .searchNames function
 ```python
 client.searchNames("key")
@@ -141,7 +132,7 @@ these allow you to search the beginning of the key (where="start"), meaning that
 anywhere within the key (None). If you do not specify where, it will be assumed that you are searching for all keys that contain the data somewhere within the name.
 ## Incrementing values
 In nahcrofDB, there is an incrementKey function. This allows you to increment a key, or a specific value within a key whilst only making one request to the database.
-Here is a simple example.
+Here is a simple example. (IMPORTANT: currently incrementKey does not support enterprise support)
 ```python
 client.makeKey("num", 5)
 client.incrementKey(10, "num")
