@@ -4,27 +4,69 @@ from urllib.parse import quote
 from typing import Any
 import os
 
+try:
+    import nahcrofDB_client_config
+    nahcrofDB_client_config.databases
+except Exception as e:
+    pass
+
 DB_folder = [0]
 DB_pass = [0]
 URL = [0]
+DB_enterprise = [False]
 
+# for "current" value, appropriate values are "primary" and "backup". spot is only used if using backup databases,
+# the reason for "spot" is in the event of multiple database failures, the client will switch which database is in use in the backup list.
+# The client will only use this client from that point forward to avoid further de-syncing the databases.
+database_in_use = {"current": "primary", "spot": 0}
 
-def init(folder: str, url: str, password: str) -> None: 
+def init(folder: str="", url: str="", password: str="", enterprise: bool=False) -> None: 
     # store important data in globally defined lists.
+    DB_enterprise[0] = enterprise
     DB_folder[0] = folder
     URL[0] = url
     DB_pass[0] = password
 
-def getKey(key: str) -> Any:
-    headers = {'X-API-Key': DB_pass[0]}
-    r = requests.get(url=f"{URL[0]}/v2/key/{quote(key)}/{quote(DB_folder[0])}", headers=headers).json()
+def is_alive():
+    url = URL[0]
     try:
-        return r["value"]
-    except KeyError:
-        return r
+        status_url = f"{url.rstrip('/')}/status"
+        response = requests.get(status_url, timeout=10)
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
 
+def getKey(key: str) -> Any:
+    if not DB_enterprise[0]:
+        headers = {'X-API-Key': DB_pass[0]}
+        r = requests.get(url=f"{URL[0]}/v2/key/{quote(key)}/{quote(DB_folder[0])}", headers=headers).json()
+        try:
+            return r["value"]
+        except KeyError:
+            return r
+    elif DB_enterprise[0]:
+        if database_in_use["current"] == "primary":
+            try:
+                headers = {'X-API-Key': DB_pass[0]}
+                r = requests.get(url=f"{URL[0]}/v2/key/{quote(key)}/{quote(DB_folder[0])}", headers=headers).json()
+                try:
+                    return r["value"]
+                except KeyError:
+                    return r
+            except Exception as e:
+                if not is_alive():
+                    database_in_use["current"] = "backup"
 
-def search(data: str) -> list[str]: 
+        if database_in_use["current"] == "backup":
+            databases = nahcrofDB_client_config.databases
+            headers = {'X-API-Key': databases[database_in_use['spot']]['password']}
+            r = requests.get(url=f"{databases[database_in_use['spot']]['url']}/v2/key/{quote(key)}/{quote(DB_folder[0])}", headers=headers).json()
+            try:
+                return r["value"]
+            except KeyError:
+                return r
+        
+def search(data: str) -> list[str]: # this function is trash and will likely be deprecated soon 
     # search database for keys containing specified data.
     r = requests.get(url=f"{URL[0]}/search/{DB_pass[0]}/?location={quote(DB_folder[0])}&parameter={quote(data)}")
     response = r.json()
@@ -32,48 +74,151 @@ def search(data: str) -> list[str]:
 
 def searchNames(data: str, where=None) -> list[str]: 
     # search database for keys containing specified data.
-    headers = {'X-API-Key': DB_pass[0]}
-    if where == None:
-        # not sure why I decided to use a string with the value "null" but oh well.
-        where = "null"
-    r = requests.get(url=f"{URL[0]}/v2/searchnames/{quote(DB_folder[0])}/?query={quote(data)}&where={quote(where)}", headers=headers)
-    response = r.json()
-    return response
+    if not DB_enterprise[0]:
+        headers = {'X-API-Key': DB_pass[0]}
+        if where == None:
+            # not sure why I decided to use a string with the value "null" but oh well.
+            where = "null"
+        r = requests.get(url=f"{URL[0]}/v2/searchnames/{quote(DB_folder[0])}/?query={quote(data)}&where={quote(where)}", headers=headers)
+        response = r.json()
+        return response
+    elif DB_enterprise[0]:
+        if database_in_use["current"] == "primary":
+            try:
+                headers = {'X-API-Key': DB_pass[0]}
+                if where == None:
+                    where = "null"
+                r = requests.get(url=f"{URL[0]}/v2/searchnames/{quote(DB_folder[0])}/?query={quote(data)}&where={quote(where)}", headers=headers)
+                response = r.json()
+                return response
+            except Exception as e:
+                if not is_alive():
+                    database_in_use["current"] = "backup"
+        if database_in_use["current"] == "backup":
+            databases = nahcrofDB_client_config.databases
+            database = databases[database_in_use["spot"]]
+            headers = {'X-API-Key': database['password']}
+            if where == None:
+                where = "null"
+            r = requests.get(url=f"{database['url']}/v2/searchnames/{quote(DB_folder[0])}/?query={quote(data)}&where={quote(where)}", headers=headers)
+            response = r.json()
+            return response
 
 def getKeys(*keys) -> dict:
-    templist = []
-    headers = {'X-API-Key': DB_pass[0]}
-    templist.append(f"?key[]={quote(str(keys[0]))}")
-    if len(keys) > 1:
-        for key in keys:
-            if f"?key[]={key}" in templist:
-                pass
-            else:
-                templist.append(f"&key[]={quote(str(key))}")
-    result = "".join(templist)
-    return requests.get(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+    if not DB_enterprise[0]:
+        templist = []
+        headers = {'X-API-Key': DB_pass[0]}
+        templist.append(f"?key[]={quote(str(keys[0]))}")
+        if len(keys) > 1:
+            for key in keys:
+                if f"?key[]={key}" in templist:
+                    pass
+                else:
+                    templist.append(f"&key[]={quote(str(key))}")
+        result = "".join(templist)
+        return requests.get(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+    elif DB_enterprise[0]:
+        if database_in_use["current"] == "primary":
+            try:
+                templist = []
+                headers = {'X-API-Key': DB_pass[0]}
+                templist.append(f"?key[]={quote(str(keys[0]))}")
+                if len(keys) > 1:
+                    for key in keys:
+                        if f"?key[]={key}" in templist:
+                            pass
+                        else:
+                            templist.append(f"&key[]={quote(str(key))}")
+                result = "".join(templist)
+                return requests.get(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+            except Exception as e:
+                if not is_alive():
+                    database_in_use["current"] = "backup"
+        if database_in_use["current"] == "backup":
+            databases = nahcrofDB_client_config.databases
+            templist = []
+            headers = {'X-API-Key': databases[database_in_use["spot"]]["password"]}
+            templist.append(f"?key[]={quote(str(keys[0]))}")
+            if len(keys) > 1:
+                for key in keys:
+                    if f"?key[]={key}" in templist:
+                        pass
+                    else:
+                        templist.append(f"&key[]={quote(str(key))}")
+            result = "".join(templist)
+            return requests.get(url=f"{databases[database_in_use['spot']]['url']}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+
 
 def getKeysList(keys: list) -> dict:
-    templist = []
-    headers = {'X-API-Key': DB_pass[0]}
-    templist.append(f"?key[]={quote(str(keys[0]))}")
-    if len(keys) > 1:
-        for key in keys:
-            if f"?key[]={key}" in templist:
-                pass
-            else:
-                templist.append(f"&key[]={quote(str(key))}")
-    result = "".join(templist)
-    return requests.get(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+    if not DB_enterprise[0]:
+        templist = []
+        headers = {'X-API-Key': DB_pass[0]}
+        templist.append(f"?key[]={quote(str(keys[0]))}")
+        if len(keys) > 1:
+            for key in keys:
+                if f"?key[]={key}" in templist:
+                    pass
+                else:
+                    templist.append(f"&key[]={quote(str(key))}")
+        result = "".join(templist)
+        return requests.get(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+    elif DB_enterprise[0]:
+        if database_in_use["current"] == "primary":
+            try:
+                templist = []
+                headers = {'X-API-Key': DB_pass[0]}
+                templist.append(f"?key[]={quote(str(keys[0]))}")
+                if len(keys) > 1:
+                    for key in keys:
+                        if f"?key[]={key}" in templist:
+                            pass
+                        else:
+                            templist.append(f"&key[]={quote(str(key))}")
+                result = "".join(templist)
+                return requests.get(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+            except Exception as e:
+                if not is_alive():
+                    database_in_use["current"] = "backup"
+        if database_in_use["current"] == "backup":
+            databases = nahcrofDB_client_config.databases
+            templist = []
+            headers = {'X-API-Key': databases[database_in_use["spot"]]["password"]}
+            templist.append(f"?key[]={quote(str(keys[0]))}")
+            if len(keys) > 1:
+                for key in keys:
+                    if f"?key[]={key}" in templist:
+                        pass
+                    else:
+                        templist.append(f"&key[]={quote(str(key))}")
+            result = "".join(templist)
+            return requests.get(url=f"{databases[database_in_use['spot']]['url']}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
 
-def makeKey(key: str, value: Any):
+def makeKey(key: str, value: Any): # returns a response, unless in enterprise mode, where it returns a list of all responses
     payload = {key: value}
     headers = {'X-API-Key': DB_pass[0]}
-    return requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload)
+    if not DB_enterprise[0]:
+        return requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload)
+
+    requests_made = []
+    requests_made.append(requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+    for database in nahcrofDB_client_config.databases:
+        headers = {'X-API-Key': database['password']}
+        requests_made.append(requests.post(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+    return requests_made
 
 def makeKeys(data: dict):
     headers = {'X-API-Key': DB_pass[0]}
-    return requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data)
+    if not DB_enterprise[0]:
+        return requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data)
+
+    requests_made = []
+    requests_made.append(requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data))
+    for database in nahcrofDB_client_config.databases:
+        headers = {'X-API-Key': database['password']}
+        requests_made.append(requests.post(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data))
+    return requests_made
+
+
 
 def makekeys_test(amount: int) -> dict:
     return requests.get(url=f"{URL[0]}/test/makekeys/{quote(DB_folder[0])}/{DB_pass[0]}/{amount}").json()
@@ -88,9 +233,17 @@ def kill_db() -> None:
 def delKey(key: str):
     payload = [key]
     headers = {'X-API-Key': DB_pass[0]}
-    return requests.delete(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload)
+    if not DB_enterprise[0]:
+        return requests.delete(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload)
 
-def incrementKey(amount, *pathtokey):
+    requests_made = []
+    requests_made.append(requests.delete(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+    for database in nahcrofDB_client_config.databases:
+        headers = {'X-API-Key': database['password']}
+        requests_made.append(requests.delete(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+    return requests_made
+
+def incrementKey(amount, *pathtokey): # does not currently support enterprise mode
     payload = {"amount": amount}
     headers = {'X-API-Key': DB_pass[0]}
     templist = []
