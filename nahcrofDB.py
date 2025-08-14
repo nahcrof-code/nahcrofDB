@@ -524,7 +524,10 @@ def delKey(location, keyname):
             structure_data[location]
         except KeyError:
             build_st()
-        del structure_data[location][keyname]
+        try:
+            del structure_data[location][keyname]
+        except KeyError:
+            log(f"difficulty deleting key ({keyname}) from database location ({location}) within memory structure data")
     st = open(f"{default_path}{location}/st.db", "a")
     json_data = {keyname: 0}
     st.write(json.dumps(json_data) + "\n")
