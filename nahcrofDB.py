@@ -14,18 +14,20 @@ DB_folder = [0]
 DB_pass = [0]
 URL = [0]
 DB_enterprise = [False]
+DB_log = [False]
 
 # for "current" value, appropriate values are "primary" and "backup". spot is only used if using backup databases,
 # the reason for "spot" is in the event of multiple database failures, the client will switch which database is in use in the backup list.
 # The client will only use this client from that point forward to avoid further de-syncing the databases.
 database_in_use = {"current": "primary", "spot": 0}
 
-def init(folder: str="", url: str="", password: str="", enterprise: bool=False) -> None: 
+def init(folder: str="", url: str="", password: str="", enterprise: bool=False, console_log: bool=False) -> None: 
     # store important data in globally defined lists.
     DB_enterprise[0] = enterprise
     DB_folder[0] = folder
     URL[0] = url
     DB_pass[0] = password
+    DB_log[0] = console_log 
 
 def is_alive():
     url = URL[0]
@@ -202,8 +204,9 @@ def makeKey(key: str, value: Any): # returns a response, unless in enterprise mo
     requests_made = []
     try:
         requests_made.append(requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
-    except Exception:
-        pass
+    except Exception as e:
+        if DB_log[0]:
+            print(f"PRIMARY DB UPDATE ERROR: {e}")
     for database in nahcrofDB_client_config.databases:
         headers = {'X-API-Key': database['password']}
         try:
@@ -220,13 +223,14 @@ def makeKeys(data: dict):
     requests_made = []
     try:
         requests_made.append(requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data))
-    except Exception:
-        pass
+    except Exception as e:
+        if DB_log[0]:
+            print(f"PRIMARY DB UPDATE ERROR: {e}")
     for database in nahcrofDB_client_config.databases:
         headers = {'X-API-Key': database['password']}
         try:
             requests_made.append(requests.post(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data))
-        except Exception:
+        except Exception as e:
             pass
     return requests_made
 
@@ -250,8 +254,9 @@ def delKey(key: str):
     requests_made = []
     try:
         requests_made.append(requests.delete(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
-    except Exception: 
-        pass
+    except Exception as e: 
+        if DB_log[0]:
+            print(f"PRIMARY DB UPDATE ERROR: {e}")
     for database in nahcrofDB_client_config.databases:
         headers = {'X-API-Key': database['password']}
         try:
