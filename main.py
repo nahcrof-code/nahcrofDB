@@ -15,7 +15,7 @@ queue_method = read_config.config["queue_method"]
 default_path = read_config.config["default_path"]
 st_store_method = read_config.config["st_store_method"]
 
-version = "2.7"
+version = "2.8.1"
 
 memory_queue = {}
 
@@ -199,6 +199,11 @@ def home():
                 return redirect("/dashboard")
             else:
                 return "how?"
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
 @app.route("/dashboard")
 def dashboard():
@@ -508,16 +513,12 @@ def keysv2(database):
         token = request.headers.get("X-API-Key")
         if token == mainpass:
             data = request.get_json()
-            for key in data:
-                value = data[key]
-                print(key)
-                print(value)
-                if queue_method == "memory":
-                    for key, value in data.items():
-                        memory_pushKey(database, key, value)
-                else:
-                    for key, value in data.items():
-                        nahcrofDB.pushKey(database, key, value)
+            if queue_method == "memory":
+                for key, value in data.items():
+                    memory_pushKey(database, key, value)
+            else:
+                for key, value in data.items():
+                    nahcrofDB.pushKey(database, key, value)
             return "", 204
         else:
             user_data = {
