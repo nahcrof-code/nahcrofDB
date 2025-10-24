@@ -103,6 +103,26 @@ OUTPUT:
 ```
 {'key': 'value', 'key2': 'value'}
 ```
+```getKeysIncrements``` functions like ```getKeysList``` with the ability to get a list of keys, but instead of sending the entire request at once, it requests chunks, like requesting 100 keys out of the entire list at a time. This helps deal with the max GET request size you'll usually run into.<br><br>
+Here are some examples
+```python
+keys = client.getKeysIncrements(["key", "key2", ...])
+```
+(this will get all the keys in increments of 100 and leave no logs)
+```python
+keys = client.getKeysIncrements(["key", "key2", ...], log=True)
+```
+OUTPUT:
+```
+found values for 1/200 keys!
+found values for 2/200 keys!
+...
+found values for 200/200 keys!
+```
+Finally, you can set ```increment``` to a value in order to search for a number other than 100 at a time. It looks like this...
+```python
+client.getKeysIncrements(["key", "key2", ...], increment=50)
+```
 ## Searching the database
 To find keys containing data within keynames, you will use the .searchNames function
 ```python
