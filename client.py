@@ -8,24 +8,26 @@ try:
     import nahcrofDB_client_config
     nahcrofDB_client_config.databases
 except Exception as e:
-    pass
+    print(f"Failure setting up enterprise usage: {e}")
 
 DB_folder = [0]
 DB_pass = [0]
 URL = [0]
 DB_enterprise = [False]
+DB_log = [False]
 
 # for "current" value, appropriate values are "primary" and "backup". spot is only used if using backup databases,
 # the reason for "spot" is in the event of multiple database failures, the client will switch which database is in use in the backup list.
 # The client will only use this client from that point forward to avoid further de-syncing the databases.
 database_in_use = {"current": "primary", "spot": 0}
 
-def init(folder: str="", url: str="", password: str="", enterprise: bool=False) -> None: 
+def init(folder: str="", url: str="", password: str="", enterprise: bool=False, console_log: bool=False) -> None: 
     # store important data in globally defined lists.
     DB_enterprise[0] = enterprise
     DB_folder[0] = folder
     URL[0] = url
     DB_pass[0] = password
+    DB_log[0] = console_log 
 
 def is_alive():
     url = URL[0]
@@ -193,6 +195,28 @@ def getKeysList(keys: list) -> dict:
             result = "".join(templist)
             return requests.get(url=f"{databases[database_in_use['spot']]['url']}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
 
+def getKeysIncrements(keys: list, log: bool=False, increment: int=100):
+    total_keys = len(keys)
+    index = [0]
+    current_request = []
+    final_request = {}
+    actual_index = -1
+
+    for key in keys:
+        index[0] += 1
+        actual_index += 1
+        current_request.append(keys[actual_index])
+        if log:
+            print(f"found values for {actual_index}/{total_keys} keys!") 
+        if index[0] > 100:
+            data = getKeysList(current_request)
+            current_request = []
+            index[0] = 0
+            for key in data:
+                final_request[key] = data[key]
+
+    return final_request
+
 def makeKey(key: str, value: Any): # returns a response, unless in enterprise mode, where it returns a list of all responses
     payload = {key: value}
     headers = {'X-API-Key': DB_pass[0]}
@@ -200,10 +224,18 @@ def makeKey(key: str, value: Any): # returns a response, unless in enterprise mo
         return requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload)
 
     requests_made = []
-    requests_made.append(requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+    try:
+        requests_made.append(requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+    except Exception as e:
+        requests_made.append(f"[ERROR MAIN] {e}")
+        if DB_log[0]:
+            print(f"PRIMARY DB UPDATE ERROR: {e}")
     for database in nahcrofDB_client_config.databases:
         headers = {'X-API-Key': database['password']}
-        requests_made.append(requests.post(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+        try:
+            requests_made.append(requests.post(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+        except Exception:
+            requests_made.append("[ERROR]")
     return requests_made
 
 def makeKeys(data: dict):
@@ -212,10 +244,18 @@ def makeKeys(data: dict):
         return requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data)
 
     requests_made = []
-    requests_made.append(requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data))
+    try:
+        requests_made.append(requests.post(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data))
+    except Exception as e:
+        requests_made.append(f"[ERROR MAIN] {e}")
+        if DB_log[0]:
+            print(f"PRIMARY DB UPDATE ERROR: {e}")
     for database in nahcrofDB_client_config.databases:
         headers = {'X-API-Key': database['password']}
-        requests_made.append(requests.post(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data))
+        try:
+            requests_made.append(requests.post(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=data))
+        except Exception as e:
+            requests_made.append("[ERROR]")
     return requests_made
 
 
@@ -235,12 +275,19 @@ def delKey(key: str):
     headers = {'X-API-Key': DB_pass[0]}
     if not DB_enterprise[0]:
         return requests.delete(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload)
-
     requests_made = []
-    requests_made.append(requests.delete(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+    try:
+        requests_made.append(requests.delete(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+    except Exception as e: 
+        requests_made.append(f"[ERROR MAIN] {e}")
+        if DB_log[0]:
+            print(f"PRIMARY DB UPDATE ERROR: {e}")
     for database in nahcrofDB_client_config.databases:
         headers = {'X-API-Key': database['password']}
-        requests_made.append(requests.delete(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+        try:
+            requests_made.append(requests.delete(url=f"{database['url']}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
+        except Exception:
+            requests_made.append("[ERROR]")
     return requests_made
 
 def incrementKey(amount, *pathtokey): # does not currently support enterprise mode
