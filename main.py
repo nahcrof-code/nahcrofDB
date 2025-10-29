@@ -42,6 +42,14 @@ app.config["SECRET_KEY"] = "verysecret"
 def status():
     return "alive"
 
+@app.route("/ui/hostui.css")
+def hostuicss():
+    return send_file("templates/hostui.css")
+
+@app.route("/ui/hostui.js")
+def hostuijs():
+    return send_file("templates/hostui.js")
+
 @app.route("/kill_db/<password>/")
 def kill_db(password):
     if password == mainpass:
