@@ -6,96 +6,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | nahcrofDB</title>
     <link rel="stylesheet" href="/ui/hostui.css">
-    <style>	
-	body {
-	    display: grid;
-	    justify-content: center;
-	}
-	header h1 {
-	    margin-bottom: -5px;
-	}
-	a {
-	    text-decoration: none;
-	    color: var(--text);
-	}
-	.container {
-	    width: 70vw;
-	}
-	.pretty {
-	    color: #4B78FF;
-	}
+    <style>
+        body {
+            display: grid;
+            justify-content: center;
+        }
+        header h1 {
+            margin-bottom: -5px;
+        }
+        a {
+            text-decoration: none;
+            color: var(--text);
+        }
+        .container {
+            width: 70vw;
+        }
+        .pretty {
+            color: #4B78FF;
+        }
 
-	.btn {
-	    width: auto;
-	}
+        .btn {
+            width: auto;
+        }
 
-	.btn-white {
-	    width: auto;
-	}
+        .btn-white {
+            width: auto;
+        }
 
-	.btn-blue {
-	    width: auto;
-	}
+        .btn-blue {
+            width: auto;
+        }
 
-	.top-buttons {
-	    display: flex;
-	}
+        .top-buttons {
+            display: flex;
+        }
 
-	.databases {
-	    margin-top: 25px;
-	    display: flex;
-	    flex-wrap: wrap;
-	}
+        .databases {
+            margin-top: 25px;
+            display: flex;
+            flex-wrap: wrap;
+        }
 
-	.db {
-	    margin-right: 20px;
-	    font-size: 1.3rem;
-	    padding-left: 20px;
-	    padding-right: 20px;
-	    padding-top: 15px;
-	    padding-bottom: 15px;
-	    border: 1px solid;
-	    border-color: var(--border);
-	    border-radius: 20px;
-	    width: auto;
-	    background: var(--dark-background);
-	    transition: 0.3s ease;
-	}
+        .db {
+            margin-right: 20px;
+            margin-top: 20px;
+            font-size: 1.3rem;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-top: 15px;
+            padding-bottom: 15px;
+            border: 1px solid;
+            border-color: var(--border);
+            border-radius: 20px;
+            width: 200px;
+            overflow-wrap: break-word;
+            background: var(--dark-background);
+            transition: 0.3s ease;
+        }
 
-	.db i{
-	    margin-right: 5px;	
-	}
+        .db i{
+            margin-right: 5px;
+        }
 
-	.db:hover {
-	    cursor: pointer;
-	    background: var(--background);
-	}
+        .db:hover {
+            cursor: pointer;
+            background: var(--background);
+        }
 
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <header>
-	<h1>nahcrof<t class="pretty">DB</t></h1>
-	<div class="version pretty">{{version}}</div>
-	<div style="border-bottom: 1px solid var(--text); width: 100%; margin-top: 15px;"></div>
+        <h1>nahcrof<t class="pretty">DB</t></h1>
+        <div class="version pretty">{{version}}</div>
+        <div style="border-bottom: 1px solid var(--text); width: 100%; margin-top: 15px;"></div>
     </header>
     <div class="container"><br>
-	<!--a href="/create_database"><button class="btn">+ Create Database</button></a-->
-	<a href="/create_database"><button class="btn-blue"><i class="fas fa-plus"></i> Create Database</button></a>
-	    {% if folders == {} %}
-	    {% else %}
-		<div class="databases">
-		    {% for folder in folders %}
-			<a href="/view_db/{{folders[folder]['name']}}">
-			    <div class="db">
-				<i class="fas fa-database" style="color: var(--text);"></i>
-				{{folder}}
-			    </div>
-			</a>
-		    {% endfor %}
-		</div>
-	    {% endif %}
+        <!--a href="/create_database"><button class="btn">+ Create Database</button></a-->
+        <a href="/create_database"><button class="btn-blue"><i class="fas fa-plus"></i> Create Database</button></a>
+            {% if folders == {} %}
+            {% else %}
+                <div class="databases">
+                    {% for folder in folders %}
+                        <a href="/view_db/{{folders[folder]['name']}}">
+                            <div class="db">
+                                <i class="fas fa-database" style="color: var(--text);"></i>
+                                {{folder}}
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
     </div>
 </body>
 </html>
