@@ -155,6 +155,5 @@ input:focus {
 
 .input:focus {
     outline: none;
-    border-color: var(--border-focus); 
+    border-color: var(--border-focus);
 }
-
