@@ -1,4 +1,4 @@
-import nahcrofDB 
+import nahcrofDB
 from flask import Flask, request, jsonify, render_template, url_for, redirect, session, send_file
 import pickle
 import os
@@ -20,7 +20,7 @@ version = "2.9.0"
 memory_queue = {}
 
 def memory_pushKey(location: str, key: str, value: Any):
-    memory_queue[key] = {"data": {key: value}, "location": location} 
+    memory_queue[key] = {"data": {key: value}, "location": location}
 
 if st_store_method == "memory":
     nahcrofDB.build_st()
@@ -56,9 +56,9 @@ def kill_db(password):
         write_values = {}
         writes_list = list(memory_queue.keys())
         for write in writes_list:
-            try:             
+            try:
                 write_data = memory_queue[write]
-                location = write_data["location"] 
+                location = write_data["location"]
                 if location in write_values:
                     for key in write_data["data"]:
                         write_values[location][key] = write_data["data"][key]
@@ -72,7 +72,7 @@ def kill_db(password):
                 time.sleep(0.1)
         for location in write_values:
             nahcrofDB.makeKeys(location, write_values[location])
-        os.system(f"kill {pid}") 
+        os.system(f"kill {pid}")
 
 @app.route("/test/makekeys/<database>/<password>/<amount>")
 def test_makekey(database, password, amount):
@@ -175,7 +175,7 @@ def view_db(database):
 
             # compare
             if backup_exists:
-                
+
                 if nahcrofDB.compare_databases(database, f"{database}_database_backup"):
                     message = "database MATCHES the backup"
                 else:
@@ -290,7 +290,7 @@ def search(password):
         }
         return jsonify(user_data), 200
     else:
-        return "no", 403    
+        return "no", 403
 
 @app.route("/searchNames/<password>/")
 def searchNamesAPI(password):
@@ -306,7 +306,7 @@ def searchNamesAPI(password):
         }
         return jsonify(user_data), 200
     else:
-        return "no", 403    
+        return "no", 403
 
 @app.route("/getKeys/<password>/")
 def getKeys(password):
@@ -429,7 +429,7 @@ def emptyDB(password):
 
 @app.route("/deleteDB/<password>/", methods=["POST"])
 def deleteDB(password):
-    if password == mainpass:    
+    if password == mainpass:
         data = request.get_json()
         nahcrofDB.deleteDB(data["location"])
         return "success", 205
@@ -486,9 +486,9 @@ def keysv2(database):
     if request.method == "GET":
         templist = []
         token = request.headers.get("X-API-Key")
-        if token == mainpass: 
+        if token == mainpass:
             args = request.args.getlist("key[]")
-            
+
             tempdict = {}
             for x in args:
                 if x in memory_queue:
@@ -499,7 +499,7 @@ def keysv2(database):
                         templist.append(x)
                 else:
                     templist.append(x)
- 
+
 
             newdata = nahcrofDB.getKeys(database, templist)
             for key, value in tempdict.items():
@@ -547,6 +547,8 @@ def keysv2(database):
             return jsonify(user_data), 401
         data = request.get_json()
         for key in data:
+            if key in memory_queue:
+                del memory_queue[key]
             nahcrofDB.delKey(database, key)
         return "", 204
     else:
