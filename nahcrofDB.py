@@ -12,7 +12,7 @@ utf = "utf-8"
 # file_stats.st_size / (1024 * 1024)
 default_path = config["default_path"]
 st_type = ["file"]
-structure_data = {} 
+structure_data = {}
 
 def build_st() -> None:
     st_type[0] = "memory"
@@ -27,7 +27,7 @@ def build_st() -> None:
                 keyname = list(line_json.keys())[0]
                 key_location = line_json[keyname]
                 if key_location != 0:
-                    structure_data[location][keyname] = key_location 
+                    structure_data[location][keyname] = key_location
                 if key_location == 0:
                     if keyname in structure_data[location]:
                         del structure_data[location][keyname]
@@ -35,7 +35,7 @@ def build_st() -> None:
     build_time = build_end-build_start
     console_color(f"structures built! Took ({build_time})s", "purple")
     structures_memory_space = sys.getsizeof(structure_data)
-    console_color(f"Memory taken by structures: {structures_memory_space}", "cyan") 
+    console_color(f"Memory taken by structures: {structures_memory_space}", "cyan")
 
 # this will log a message to the location/database folder
 def log(location, message):
@@ -117,12 +117,12 @@ def search(location, data):
             tempdict[str(partition)] = pickle.load(open(f"{default_path}{location}/usr_f{partition}.db", "rb"))
         for item in existing:
                 try:
-                    checking = str(tempdict[str(existing[item])])  
+                    checking = str(tempdict[str(existing[item])])
                     if newdata in checking:
                         dict_alt[item] = ""
                 except KeyError as e:
                     log(location, f"SEARCH ERROR: trouble when checking values in ({item}) key: {key}")
-        
+
         return list(dict_alt.keys())
     except Exception as e:
         log(location, e)
@@ -143,7 +143,7 @@ def find_key_from_structure(location, key: str):
         found = [0]
         with open(f"{default_path}{location}/st.db") as st:
             for line in st:
-                
+
                 if line.startswith("{" + f'"{key}"'):
                     json_value = json.loads(line)
                     found[0] = json_value[key]
@@ -214,13 +214,13 @@ def searchwithqueue(location, data, queue):
         for item in existing:
             if item not in dict_alt:
                 try:
-                    checking = str(tempdict[str(existing[item])])  
+                    checking = str(tempdict[str(existing[item])])
                     if newdata in checking:
                         dict_alt[item] = ""
                 except KeyError as e:
                     log(location, f"SEARCH ERROR: trouble when checking values in ({item}) key: {key}")
         print("search done")
-        
+
         return list(dict_alt.keys())
     except Exception as e:
         log(location, e)
@@ -230,7 +230,7 @@ def searchwithqueue(location, data, queue):
 
 def searchNames(location, query, where=None):
     # "where" is where in the name will be searched. if where="end" then the db will search for keys ending with the query
-    # if where="start" then the db will search for keys starting with the query     
+    # if where="start" then the db will search for keys starting with the query
     # if where=None then the db will search all keys where the keyname contains the query anywhere
     templist = []
     structured_query = str(query).lower()
@@ -251,12 +251,12 @@ def searchNames(location, query, where=None):
             else:
                 if structured_query in searchkey:
                     templist.append(key)
-    
+
     return templist
 
 def searchNameswithqueue(location, query, where=None, queue=None):
     # "where" is where in the name will be searched. if where="end" then the db will search for keys ending with the query
-    # if where="start" then the db will search for keys starting with the query     
+    # if where="start" then the db will search for keys starting with the query
     # if where=None then the db will search all keys where the keyname contains the query anywhere
     tempdict = {} # dictionary used because it is ~150x faster than a list
     if st_type[0] == "memory":
@@ -383,7 +383,7 @@ def makeKeys(location, keyvalues):
         updated_partitions = {} # data of partitions that will be updated
         smaller_partition_size = partition_size * 0.75
         if mbs > smaller_partition_size: # accounts for the amount of keys being causing partition to go over 1, makes new partition early.
-            partitions = partitions + 1 
+            partitions = partitions + 1
             pickle.dump({}, open(f"{default_path}{location}/usr_f{partitions}.db", "wb"))
             pickle.dump(partitions, open(f"{default_path}{location}/partitions.db", "wb"))
         for key in keyvalues:
@@ -395,20 +395,20 @@ def makeKeys(location, keyvalues):
                     structure_data[location][key] = partitions
                 if partitions in updated_partitions:
                     updated_partitions[partitions][key] = keycontent
-                else: 
+                else:
                     thispartition = pickle.load(open(f"{default_path}{location}/usr_f{partitions}.db", "rb"))
-                    updated_partitions[partitions] = thispartition 
+                    updated_partitions[partitions] = thispartition
                     updated_partitions[partitions][key] = keycontent
 
             else:
                 correctpartition = found[key]
                 if correctpartition in updated_partitions:
                     updated_partitions[correctpartition][key] = keycontent
-                else: 
+                else:
                     thispartition = pickle.load(open(f"{default_path}{location}/usr_f{correctpartition}.db", "rb"))
-                    updated_partitions[correctpartition] = dict(thispartition) 
+                    updated_partitions[correctpartition] = dict(thispartition)
                     updated_partitions[correctpartition][key] = keycontent
-                
+
 
         for partition in updated_partitions:
             pickle.dump(updated_partitions[partition], open(f"{default_path}{location}/usr_f{partition}.tmp", "wb"))
@@ -455,7 +455,7 @@ def makeKey(location, keyname, keycontent):
             mbs = file_stats.st_size / (1000 * 1000)
             partition_size = float(config["partition_size"])
             if mbs > partition_size:
-                partitions = partitions + 1 
+                partitions = partitions + 1
                 pickle.dump(partitions, open(f"{default_path}{location}/partitions.db", "wb"))
 
                 st = open(f"{default_path}{location}/st.db", "a")
@@ -467,7 +467,7 @@ def makeKey(location, keyname, keycontent):
 
                 pickle.dump({}, open(f"{default_path}{location}/usr_f{partitions}.db", "wb"))
             else:
-                
+
                 st = open(f"{default_path}{location}/st.db", "a")
                 stdata = {keyname: partitions}
                 st.write(json.dumps(stdata) + "\n")
@@ -527,12 +527,12 @@ def delKey(location, keyname):
         try:
             del structure_data[location][keyname]
         except KeyError:
-            log(f"difficulty deleting key ({keyname}) from database location ({location}) within memory structure data")
+            log(location, f"difficulty deleting key ({keyname}) from database location ({location}) within memory structure data")
     st = open(f"{default_path}{location}/st.db", "a")
     json_data = {keyname: 0}
     st.write(json.dumps(json_data) + "\n")
     st.close()
-    
+
 
 def keysamount(location):
     tempdict = {}
@@ -622,7 +622,7 @@ def backupDB(location):
     except FileNotFoundError:
         os.mkdir(f"{default_path}{location}_database_backup")
     # assume linux
-    os.system(f"cp -r {default_path}{location}/. {default_path}{location}_database_backup") 
+    os.system(f"cp -r {default_path}{location}/. {default_path}{location}_database_backup")
 
 # same sollution as backupDB, just reverse
 def setToBackup(location):
