@@ -266,6 +266,29 @@ BODY (application/json)
 ```
 RESPONSE 204 NO CONTENT<br>
 example request url: /v2/increment/example_db/nums_list/num1
+# Backups/redundancy
+## Database Redundancy
+This is built using the `client.py` script and is not actually built-in on the database side. If requested, I'd be willing to give a more thorough breakdown on how redundancy can be well handled purely on the client.<br><br>
+The config file to setup your redundancy wherever you happen to be using nahcrofDB is titled `nahcrofDB_client_config.py`. The absence of this file is the cause for the start message "Failure setting up enterprise usage" followed by an import error. Despite the comments within the file, do not include more than one redundant database. The functionality is not currently there.<br><br>
+nahcrofDB_client_config.py
+```python
+# you do not need to use this file if you are not using enterprise mode, 
+# this would be included with your client file if you are using enterprise mode.
+
+# expand this list as much as you need, each database will be written to and utilized in the event of another database failure, 
+# the one used in the init function will be the default
+databases = [
+    {"url": "http://0.0.0.0:8080", "password": "super_duper_password"}, 
+]
+```
+as for using it within your code, everything stays the same except for the .init function which will look something like this now:
+```python
+client.init(folder="my_db_name", url="https://url.com/", password="api_password_here", enterprise=True)
+```
+as long as enterprise is either not explicitly set or is intentionally set to False, redundant databases will be ignored and requests will ONLY go to the database configured in the init function.
+## Backup scripts
+For this I'm just going to link to an external repo, there's already tons of files in this one and it kinda bothers me
+[nahcrofDB-backup](https://github.com/scuzzles/nahcrofDB-backup)
 # Projects using nahcrofDB
 - [CrofAI](https://ai.nahcrof.com/) - Cheap, scalable AI inference provider
 - [Rise-game](https://rise-game.com/) - text-based, online, browser RPG game
