@@ -157,33 +157,15 @@ def postGetKeys(keys: list) -> dict: # gets keys using post request
     elif DB_enterprise[0]:
         if database_in_use["current"] == "primary":
             try:
-                templist = []
                 headers = {'X-API-Key': DB_pass[0]}
-                templist.append(f"?key[]={quote(str(keys[0]))}")
-                if len(keys) > 1:
-                    for key in keys:
-                        if f"?key[]={key}" in templist:
-                            pass
-                        else:
-                            templist.append(f"&key[]={quote(str(key))}")
-                result = "".join(templist)
-                return requests.post(url=f"{URL[0]}/v2/postgetkeys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+                return requests.post(url=f"{URL[0]}/v2/postgetkeys/{quote(DB_folder[0])}", headers=headers, json=keys).json()
             except Exception as e:
                 if not is_alive():
                     database_in_use["current"] = "backup"
         if database_in_use["current"] == "backup":
             databases = nahcrofDB_client_config.databases
-            templist = []
             headers = {'X-API-Key': databases[database_in_use["spot"]]["password"]}
-            templist.append(f"?key[]={quote(str(keys[0]))}")
-            if len(keys) > 1:
-                for key in keys:
-                    if f"?key[]={key}" in templist:
-                        pass
-                    else:
-                        templist.append(f"&key[]={quote(str(key))}")
-            result = "".join(templist)
-            return requests.post(url=f"{databases[database_in_use['spot']]['url']}/v2/postgetkeys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+            return requests.post(url=f"{databases[database_in_use['spot']]['url']}/v2/postgetkeys/{quote(DB_folder[0])}", headers=headers, json=keys).json()
 
 def getKeysList(keys: list) -> dict:
     if not DB_enterprise[0]:
