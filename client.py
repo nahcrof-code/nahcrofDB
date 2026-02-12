@@ -21,13 +21,13 @@ DB_log = [False]
 # The client will only use this client from that point forward to avoid further de-syncing the databases.
 database_in_use = {"current": "primary", "spot": 0}
 
-def init(folder: str="", url: str="", password: str="", enterprise: bool=False, console_log: bool=False) -> None: 
+def init(folder: str="", url: str="", password: str="", enterprise: bool=False, console_log: bool=False) -> None:
     # store important data in globally defined lists.
     DB_enterprise[0] = enterprise
     DB_folder[0] = folder
     URL[0] = url
     DB_pass[0] = password
-    DB_log[0] = console_log 
+    DB_log[0] = console_log
 
 def is_alive():
     url = URL[0]
@@ -67,14 +67,14 @@ def getKey(key: str) -> Any:
                 return r["value"]
             except KeyError:
                 return r
-        
-def search(data: str) -> list[str]: # this function is trash and will likely be deprecated soon 
+
+def search(data: str) -> list[str]: # this function is trash and will likely be deprecated soon
     # search database for keys containing specified data.
     r = requests.get(url=f"{URL[0]}/search/{DB_pass[0]}/?location={quote(DB_folder[0])}&parameter={quote(data)}")
     response = r.json()
     return response["data"]
 
-def searchNames(data: str, where=None) -> list[str]: 
+def searchNames(data: str, where=None) -> list[str]:
     # search database for keys containing specified data.
     if not DB_enterprise[0]:
         headers = {'X-API-Key': DB_pass[0]}
@@ -150,6 +150,40 @@ def getKeys(*keys) -> dict:
             result = "".join(templist)
             return requests.get(url=f"{databases[database_in_use['spot']]['url']}/v2/keys/{quote(DB_folder[0])}/{result}", headers=headers).json()
 
+def postGetKeys(keys: list) -> dict: # gets keys using post request
+    if not DB_enterprise[0]:
+        headers = {'X-API-Key': DB_pass[0]}
+        return requests.post(url=f"{URL[0]}/v2/postgetkeys/{quote(DB_folder[0])}", headers=headers, json=keys).json()
+    elif DB_enterprise[0]:
+        if database_in_use["current"] == "primary":
+            try:
+                templist = []
+                headers = {'X-API-Key': DB_pass[0]}
+                templist.append(f"?key[]={quote(str(keys[0]))}")
+                if len(keys) > 1:
+                    for key in keys:
+                        if f"?key[]={key}" in templist:
+                            pass
+                        else:
+                            templist.append(f"&key[]={quote(str(key))}")
+                result = "".join(templist)
+                return requests.post(url=f"{URL[0]}/v2/postgetkeys/{quote(DB_folder[0])}/{result}", headers=headers).json()
+            except Exception as e:
+                if not is_alive():
+                    database_in_use["current"] = "backup"
+        if database_in_use["current"] == "backup":
+            databases = nahcrofDB_client_config.databases
+            templist = []
+            headers = {'X-API-Key': databases[database_in_use["spot"]]["password"]}
+            templist.append(f"?key[]={quote(str(keys[0]))}")
+            if len(keys) > 1:
+                for key in keys:
+                    if f"?key[]={key}" in templist:
+                        pass
+                    else:
+                        templist.append(f"&key[]={quote(str(key))}")
+            result = "".join(templist)
+            return requests.post(url=f"{databases[database_in_use['spot']]['url']}/v2/postgetkeys/{quote(DB_folder[0])}/{result}", headers=headers).json()
 
 def getKeysList(keys: list) -> dict:
     if not DB_enterprise[0]:
@@ -207,7 +241,7 @@ def getKeysIncrements(keys: list, log: bool=False, increment: int=100):
         actual_index += 1
         current_request.append(keys[actual_index])
         if log:
-            print(f"found values for {actual_index}/{total_keys} keys!") 
+            print(f"found values for {actual_index}/{total_keys} keys!")
         if index[0] > 100:
             data = getKeysList(current_request)
             current_request = []
@@ -278,7 +312,7 @@ def delKey(key: str):
     requests_made = []
     try:
         requests_made.append(requests.delete(url=f"{URL[0]}/v2/keys/{quote(DB_folder[0])}/", headers=headers, json=payload))
-    except Exception as e: 
+    except Exception as e:
         requests_made.append(f"[ERROR MAIN] {e}")
         if DB_log[0]:
             print(f"PRIMARY DB UPDATE ERROR: {e}")
