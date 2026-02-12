@@ -123,6 +123,11 @@ Finally, you can set ```increment``` to a value in order to search for a number 
 ```python
 client.getKeysIncrements(["key", "key2", ...], increment=50)
 ```
+If this is too slow and you need to get a large number of values in one request, you can use `postGetKeys` like so:
+```python
+client.postGetKeys(["key", "key2", ...])
+```
+(Note: in order to send this request, the database has to load the entirety of this data in memory, as will the client. Make sure the systems you are using are capable of sending and receiving these requests)
 ## Searching the database
 To find keys containing data within keynames, you will use the .searchNames function
 ```python
