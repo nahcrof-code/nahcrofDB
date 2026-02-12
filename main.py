@@ -480,6 +480,44 @@ def keyv2(key, db):
     #    }
     #    return jsonify(user_data), 500
 
+@app.route("/v2/postgetkeys/<database>", methods=["POST"])
+def postgetkeys(database):
+    # allows user to getKeys with a post request, bypassing weird get request size limits
+    if request.method == "POST":
+        templist = []
+        token = request.headers.get("X-API-Key")
+        if token == mainpass:
+            args = request.json
+
+            tempdict = {}
+            for x in args:
+                if x in memory_queue:
+                    data = memory_queue[x]
+                    if data["location"] == database:
+                        tempdict[x] = data["data"][x]
+                    else:
+                        templist.append(x)
+                else:
+                    templist.append(x)
+
+
+            newdata = nahcrofDB.getKeys(database, templist)
+            for key, value in tempdict.items():
+                newdata[key] = value
+
+            user_data = {}
+            for key in newdata:
+                user_data[key] = newdata[key]
+            return jsonify(user_data), 200
+        else:
+            user_data = {
+                "error": True,
+                "status": 401,
+                "message": "Unauthorized"
+            }
+            return jsonify(user_data), 401
+    # HANDLE MAKE KEY REQUEST
+
 @app.route("/v2/keys/<database>/", methods=["POST", "GET", "DELETE"])
 def keysv2(database):
     # HANDLE GET KEYS REQUEST
